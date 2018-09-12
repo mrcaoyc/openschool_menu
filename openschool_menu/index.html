@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>开放学校菜单管理系统</title>
+		<link href="css/element-ui/2.2.1/theme-chalk/index.css" rel="stylesheet" />
+	</head>
+	<body>
+		<div id="app">
+		  	<el-form ref="form" :model="form" label-width="80px" :inline="true">
+		  		<el-form-item>
+		  			 <el-select v-model="schoolId" placeholder="请选择学校">
+					    <el-option
+					      v-for="school in schools"
+					      :key="school.guid"
+					      :label="school.name"
+					      :value="school.guid">
+					    </el-option>
+					  </el-select>
+		  		</el-form-item>
+				<el-form-item>
+				   <el-button type="primary" @click="search">搜索</el-button>
+				</el-form-item>
+				<el-form-item>
+				   <el-button type="primary" @click="showFirstLevel">添加一级菜单</el-button>
+				</el-form-item>
+		  	</el-form>
+		  	
+			<el-tree :data="menus" node-key="id" ref="tree" :default-expand-all="expandAll" :expand-on-click-node="expandOnClickNode">
+				<span class="custom-tree-node" slot-scope="{ node, data }">
+				    <span>{{ node.label }}</span>
+				    <span>
+				      <el-button
+				        type="text"
+				        size="mini"
+				        @click="() => showAppend(data)">
+				        	添加
+				      </el-button>
+				    </span>
+				    <span>
+				      <el-button
+				        type="text"
+				        size="mini"
+				        @click="() => showUpdateMenu(data,node)">
+				        	修改
+				      </el-button>
+				    </span>
+				    <span>
+				      <el-button
+				        type="text"
+				        size="mini"
+				        @click="() => deleteMenu(data)">
+				        	删除
+				      </el-button>
+				    </span>
+				    <span>
+				      <el-button
+				        type="text"
+				        size="mini"
+				        @click="() => rankDown(data,'UP')">
+				        	上移
+				      </el-button>
+				    </span>
+				    <span>
+				      <el-button
+				        type="text"
+				        size="mini"
+				        @click="() => rankDown(data,'DOWN')">
+				        	下移
+				      </el-button>
+				    </span>
+				</span>
+			</el-tree>
+		  
+			<el-dialog title="添加子菜单" :visible.sync="addDialogVisible">
+			  <el-form :model="form">
+			    <el-form-item label="父菜单" :label-width="formLabelWidth">
+			      <el-input v-model="form.parentName" auto-complete="off"></el-input>
+			    </el-form-item>
+			    <el-form-item label="子菜单名称" :label-width="formLabelWidth">
+			      <el-input v-model="form.name" auto-complete="off"></el-input>
+			    </el-form-item>
+			    <el-form-item label="子菜单路径" :label-width="formLabelWidth">
+			      <el-input v-model="form.path" auto-complete="off"></el-input>
+			    </el-form-item>
+			    <el-form-item label="子菜图标" :label-width="formLabelWidth">
+			      <el-input v-model="form.icon" auto-complete="off"></el-input>
+			    </el-form-item>
+			  </el-form>
+			  <div slot="footer" class="dialog-footer">
+			    <el-button @click="addDialogVisible = false">取 消</el-button>
+			    <el-button type="primary" @click="append">确 定</el-button>
+			  </div>
+			</el-dialog>
+			
+			<el-dialog title="添加一级菜单" :visible.sync="addFirstLevelDialogVisible">
+			  <el-form :model="parentForm">
+			    <el-form-item label="菜单名称" :label-width="formLabelWidth">
+			      <el-input v-model="parentForm.name" auto-complete="off"></el-input>
+			    </el-form-item>
+			    <el-form-item label="菜单路径" :label-width="formLabelWidth">
+			      <el-input v-model="parentForm.path" auto-complete="off"></el-input>
+			    </el-form-item>
+			    <el-form-item label="菜单图标" :label-width="formLabelWidth">
+			      <el-input v-model="parentForm.icon" auto-complete="off"></el-input>
+			    </el-form-item>
+			  </el-form>
+			  <div slot="footer" class="dialog-footer">
+			    <el-button @click="addFirstLevelDialogVisible = false">取 消</el-button>
+			    <el-button type="primary" @click="addFirstLevel">确 定</el-button>
+			  </div>
+			</el-dialog>
+			
+			<el-dialog title="修改菜单" :visible.sync="updateMenuVisible">
+			  <el-form :model="updateForm">
+			    <el-form-item label="菜单名称" :label-width="formLabelWidth">
+			      <el-input v-model="updateForm.name" auto-complete="off"></el-input>
+			    </el-form-item>
+			    <el-form-item label="菜单路径" :label-width="formLabelWidth">
+			      <el-input v-model="updateForm.path" auto-complete="off"></el-input>
+			    </el-form-item>
+			    <el-form-item label="菜单图标" :label-width="formLabelWidth">
+			      <el-input v-model="updateForm.icon" auto-complete="off"></el-input>
+			    </el-form-item>
+			  </el-form>
+			  <div slot="footer" class="dialog-footer">
+			    <el-button @click="updateMenuVisible = false">取 消</el-button>
+			    <el-button type="primary" @click="updateMenu">确 定</el-button>
+			  </div>
+			</el-dialog>
+		</div>
+		
+	</body>
+	
+	
+	<script src="js/vue.js"></script>
+	<script src="js/axios.min.js"></script>
+	<script type="text/javascript" src="js/index.js" ></script>
+	<script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.8.0.js"></script>
+	<script>
+		var apiHost="http://localhost:10000";
+		var app=new Vue({
+			el: '#app',
+			data:{
+				expandAll:true,
+				expandOnClickNode:false,
+				schoolId:"",
+				form:{
+					name:"",
+					path:"",
+					parentName:"",
+					parentId:"",
+					icon:""
+				},
+				parentForm:{
+					name:"",
+					path:"",
+					icon:""
+				},
+				updateForm:{
+					menuId:"",
+					path:"",
+					name:"",
+					icon:""
+				},
+				schools:[],
+				formLabelWidth: '120px',
+				addDialogVisible:false,
+				addFirstLevelDialogVisible:false,
+				updateMenuVisible:false,
+				menus:[]
+			},
+			methods:{
+				handleResult:function(options){
+					const _self=this;
+					const loading = _self.loading();
+					$.ajax({
+				        type:options.type,
+						url:options.url,
+						timeout:2000,
+						contentType: "application/json; charset=utf-8",
+						data: JSON.stringify(options.data) ,
+						dataType: "json",
+				        success: function (result) {
+				        	if(typeof(options.success) !="undefined"){
+				        		options.success(result);
+				        	}
+				        },
+				        error:function(xhr){
+				        	console.log(xhr);
+				        	if(xhr.status>=400){
+				        		_self.$message(xhr.responseText);
+				        	}
+				        	if(typeof(options.error) !="undefined"){
+				        		options.error(xhr);
+				        	}
+				        },
+				        complete:function(xhr){
+				        	loading.close();
+				        	if(typeof(options.complete) !="undefined"){
+				        		options.complete(xhr);
+				        	}
+				        }
+				   });
+				},
+				loading:function(){
+					return this.$loading({
+			          lock: true,
+			          text: '拼命处理中...',
+			          spinner: 'el-icon-loading',
+			          background: 'rgba(0, 0, 0, 0.7)'
+			        });
+				},
+				showAppend:function(node){
+					var _self=this;
+					if(_self.schoolId.trim()==""){
+						this.$alert('请输入学校Id');
+						return;
+					}
+					console.log(node)
+					_self.form.parentName=node.label;
+					_self.form.parentId=node.id;
+					_self.form.path="";
+					_self.form.icon="";
+					_self.addDialogVisible=true;
+					return;
+				},
+				append:function(){
+					const _self=this;
+					_self.handleResult({
+						type: "POST",
+				        url: apiHost+"/api/admin/back_menus?schoolId="+_self.schoolId,
+				        data:_self.form,
+				        success:function(){
+				        	_self.form.parentName="";
+				        	_self.form.parentId="";
+				        	_self.form.name="";
+				        	_self.addDialogVisible=false;
+				        	_self.search();
+				        }
+					});
+				},
+				showFirstLevel:function(){
+					var _self=this;
+					if(_self.schoolId.trim()==""){
+						this.$alert('请输入学校Id');
+						return;
+					}
+					_self.parentForm.name="";
+		        	_self.parentForm.path="";
+		        	_self.parentForm.icon="";
+					_self.addFirstLevelDialogVisible=true;
+				},
+				addFirstLevel:function(){
+					const _self=this;
+					
+					_self.handleResult({
+						type: "POST",
+				        url: apiHost+"/api/admin/back_menus?schoolId="+_self.schoolId,
+				        data:_self.parentForm,
+				        success: function (message) {
+				        	_self.addFirstLevelDialogVisible=false;
+				        	_self.parentForm.name="";
+				        	_self.parentForm.path="";
+				        	_self.parentForm.icon="";
+				        	_self.search();
+				        }
+					})
+				},
+				
+				//显示菜单列表
+				search:function(){
+					
+					var _self=this;
+					if(_self.schoolId.trim()==""){
+						this.$alert('请输入学校Id');
+						return;
+					}
+					this.handleResult({
+						type: "get",
+						url: apiHost+"/api/admin/back_menus?schoolId="+_self.schoolId,
+						success: function (result) {
+				        	_self.menus=[];
+				        	_self.copyTree(result,_self.menus);
+				        }
+					});
+				},
+				copyTree:function(tree,newTree){
+					var _self=this;
+					tree.forEach(function(node){
+						var newNode={
+							id:node.menuId,
+							label:node.name,
+							children: new Array()
+						}
+						newTree.push(newNode);
+						if(node.children!=null && node.children.length>0){
+							_self.copyTree(node.children,newNode.children);
+						}
+						
+					})
+				},
+				loadSchools:function(){
+					var _self=this;
+					const loading = _self.loading();
+					_self.handleResult({
+						url: apiHost+"/api/common/school/info",
+				        success: function (result) {
+				        	_self.schools=result;
+				        }
+					});
+				},
+				showUpdateMenu:function(node){
+					console.log(node)
+					
+					var _self=this;
+					_self.updateForm.name=node.label;
+					_self.updateForm.menuId=node.id;
+					_self.updateMenuVisible=true;
+				},
+				updateMenu:function(){
+					var _self=this;
+					const loading = _self.loading();
+					_self.handleResult({
+						type: "PATCH",
+				        url: apiHost+"/api/admin/back_menus/"+_self.updateForm.menuId,
+				        data:_self.updateForm,
+				        success:function(result){
+				        	_self.updateMenuVisible=false;
+				        	_self.updateForm.name="";
+				        	_self.updateForm.path="";
+				        	_self.updateForm.icon="";
+				        	_self.search();
+				     	}
+					})
+					
+				},
+				deleteMenu:function(data){
+					var _self=this;
+					this.$confirm('此操作将永久删除该菜单, 是否继续?', '提示', {
+			          confirmButtonText: '确定',
+			          cancelButtonText: '取消',
+			          type: 'warning'
+			        }).then(() => {
+			          	_self.handleResult({
+			          		type: "DELETE",
+				        	url: apiHost+"/api/admin/back_menus/"+data.id,
+				        	data:{},
+				        	success:function(){
+				        		_self.search();
+				        	}
+			          	})
+			        }).catch(()=>{})
+				},
+				rankDown:function(data,rank){
+					var _self=this;
+					_self.handleResult({
+			          		type: "PATCH",
+				        	url: apiHost+"/api/admin/back_menus/"+data.id+"/rank",
+				        	data:{rank:rank},
+				        	success:function(){
+				        		_self.search();
+				        	}
+			          	})
+				}
+			},
+			mounted:function(){
+				this.loadSchools();
+			}
+		})
+	</script>
+</html>
