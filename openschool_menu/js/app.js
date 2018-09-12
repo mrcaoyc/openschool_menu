@@ -229,6 +229,9 @@ var apiHost="http://localhost:10000";
 				        		_self.search();
 				        	}
 			          	})
+				},
+				changeEnvironment:function(){
+					this.loadSchools();
 				}
 			},
 			mounted:function(){
