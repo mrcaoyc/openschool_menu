@@ -138,7 +138,7 @@
 	<script type="text/javascript" src="js/index.js" ></script>
 	<script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.8.0.js"></script>
 	<script>
-		var apiHost="http://localhost:10000";
+		var apiHost="https://api.openschool.dev.eastedu.co";
 		var app=new Vue({
 			el: '#app',
 			data:{
@@ -229,7 +229,7 @@
 					const _self=this;
 					_self.handleResult({
 						type: "POST",
-				        url: apiHost+"/api/admin/back_menus?schoolId="+_self.schoolId,
+				        url: apiHost+"/api/admin/"+_self.schoolId+"/back_menus",
 				        data:_self.form,
 				        success:function(){
 				        	_self.form.parentName="";
@@ -256,7 +256,7 @@
 					
 					_self.handleResult({
 						type: "POST",
-				        url: apiHost+"/api/admin/back_menus?schoolId="+_self.schoolId,
+				        url: apiHost+"/api/admin/"+_self.schoolId+"/back_menus",
 				        data:_self.parentForm,
 				        success: function (message) {
 				        	_self.addFirstLevelDialogVisible=false;
@@ -270,7 +270,6 @@
 				
 				//显示菜单列表
 				search:function(){
-					
 					var _self=this;
 					if(_self.schoolId.trim()==""){
 						this.$alert('请输入学校Id');
@@ -278,7 +277,7 @@
 					}
 					this.handleResult({
 						type: "get",
-						url: apiHost+"/api/admin/back_menus?schoolId="+_self.schoolId,
+						url: apiHost+"/api/admin/"+_self.schoolId+"/back_menus?schoolId=",
 						success: function (result) {
 				        	_self.menus=[];
 				        	_self.copyTree(result,_self.menus);
@@ -304,7 +303,7 @@
 					var _self=this;
 					const loading = _self.loading();
 					_self.handleResult({
-						url: apiHost+"/api/common/school/info",
+						url: apiHost+"/api/common/schools",
 				        success: function (result) {
 				        	_self.schools=result;
 				        }
@@ -323,7 +322,7 @@
 					const loading = _self.loading();
 					_self.handleResult({
 						type: "PATCH",
-				        url: apiHost+"/api/admin/back_menus/"+_self.updateForm.menuId,
+				        url: apiHost+"/api/admin/"+_self.schoolId+"/back_menus/"+_self.updateForm.menuId,
 				        data:_self.updateForm,
 				        success:function(result){
 				        	_self.updateMenuVisible=false;
@@ -344,7 +343,7 @@
 			        }).then(() => {
 			          	_self.handleResult({
 			          		type: "DELETE",
-				        	url: apiHost+"/api/admin/back_menus/"+data.id,
+				        	url: apiHost+"/api/admin/"+_self.schoolId+"/back_menus/"+data.id,
 				        	data:{},
 				        	success:function(){
 				        		_self.search();
@@ -356,7 +355,7 @@
 					var _self=this;
 					_self.handleResult({
 			          		type: "PATCH",
-				        	url: apiHost+"/api/admin/back_menus/"+data.id+"/rank",
+				        	url: apiHost+"/api/admin/"+_self.schoolId+"/back_menus/"+data.id+"/rank",
 				        	data:{rank:rank},
 				        	success:function(){
 				        		_self.search();
